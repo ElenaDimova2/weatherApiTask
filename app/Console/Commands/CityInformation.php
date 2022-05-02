@@ -35,35 +35,47 @@ class CityInformation extends Command
     /**
      * Execute the console command.
      *
-     * @return int
+     * @return array
      */
     public function handle()
     {
         $cityName = $this->option('cityName');
-        $out = new ConsoleOutput();
-        $cityInfo = City::where('name', $cityName)
-        ->leftJoin('weather_data', 'cities.id', 'weather_data.city_id')
-        ->get()
-        ->map(function($city){
-            return [
-                'id' => $city->city_id,
-                'name' => $city->name,
-                'state_code' => $city->state_code,
-                'latitude' => $city->latitude,
-                'longitute' => $city->longitude,
-                'temperature' => $city->temperature,
-                'humidity' => $city->humidity,
-                'description' => $city->description,
-                'date' => $city->created_at
-            ];
-        });
 
-        if($cityInfo->count() == 0){
-            $out->writeln(PHP_EOL . "No cities were found with the name " . $cityName);
+        $city = City::where('name', $cityName)->get();
+        $cityCount = $city->count();
+
+        if($cityCount == 0){
+            $this->line("No cities were found with the name " . $cityName);
             return 0;
         }
-        $this->table(['id', 'name', 'state_code', 'latitude', 'longitude', 'temperature', 'humidity', 'weather_description'], $cityInfo->toArray());
+        if($cityCount > 1){
+            $this->line("Multiple cities were found with the name " . $cityName);
+            $stateCode = City::where('name', $cityName)->pluck('state_code')->toArray();
+            $state_code = $this->choice('What is the state code of the city you are looking for?', $stateCode, $stateCode[0], 2, false);
+        }
 
-        return 1;
+        $cityInfo = City::where('name', $cityName);
+
+        if(isset($state_code)){
+            $cityInfo = $cityInfo->where('state_code', $state_code);
+        }
+
+        $cityInfo = $cityInfo->leftJoin('weather_data', 'cities.id', 'weather_data.city_id')
+        ->select(
+            'cities.id',
+            'cities.name',
+            'cities.state_code',
+            'cities.latitude',
+            'cities.longitude',
+            'weather_data.temperature',
+            'weather_data.humidity',
+            'weather_data.description',
+            'weather_data.created_at',
+        )
+        ->get();
+        
+        $this->table(['id', 'name', 'state_code', 'latitude', 'longitude', 'temperature', 'humidity', 'weather_description', 'date'], $cityInfo->toArray());
+        
+        return 0;
     }
 }

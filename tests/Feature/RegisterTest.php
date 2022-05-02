@@ -24,10 +24,8 @@ class RegisterTest extends TestCase
         $this->json('post', 'api/register', $payload)
         ->assertStatus(200)
         ->assertJsonStructure([
-            'data' => [
-                'access_token',
-                'token_type'
-            ]
+            'access_token',
+            'token_type'
         ]);
     }
 
@@ -36,9 +34,11 @@ class RegisterTest extends TestCase
         $this->json('post', '/api/register')
             ->assertStatus(422)
             ->assertJson([
-                'name' => ['The name field is required.'],
-                'email' => ['The email field is required.'],
-                'password' => ['The password field is required.'],
+                "errors"=>[
+                    'name' => ['The name field is required.'],
+                    'email' => ['The email field is required.'],
+                    'password' => ['The password field is required.'],
+                ]
             ]);
     }
 }

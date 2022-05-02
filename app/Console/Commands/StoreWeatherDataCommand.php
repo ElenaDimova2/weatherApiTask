@@ -47,8 +47,12 @@ class StoreWeatherDataCommand extends Command
         
         $weatherManager = $this->weatherManager;
         $bar = $this->output->createProgressBar($cities->count());
-        $out = new ConsoleOutput();
         
+        if($cities->count() == 0){
+            $this->line("No cities in DB");
+            return 0;
+        }
+
         foreach ($cities as $city){
             
             $key = config('services.openweathermap.key');
@@ -60,7 +64,7 @@ class StoreWeatherDataCommand extends Command
             $wd = $weatherManager->getCurrentWeatherData($url);
 
             if($wd['status_code'] != 200){
-                $out->writeln(PHP_EOL . "Problem occured when retrieving data from weather api for city: " . $city->name);
+                $this->line("Problem occured when retrieving data from weather api for city: " . $city->name);
                 continue;
             }
 
@@ -80,7 +84,7 @@ class StoreWeatherDataCommand extends Command
             $newWD->city_id = $weatherData['city_id'];
 
             if(!$newWD->save()){
-                $out->writeln(PHP_EOL . "Problem occured when saving weather data data for city: " . $city->name);
+                $this->line("Problem occured when saving weather data data for city: " . $city->name);
                 continue;
             }
             $bar->advance();
@@ -88,7 +92,7 @@ class StoreWeatherDataCommand extends Command
         
         $bar->finish();
 
-        $out->writeln(PHP_EOL . "Weather Data for cities was consumed");
+        $this->line("Weather Data for cities was consumed");
 
         return 1;
     }
